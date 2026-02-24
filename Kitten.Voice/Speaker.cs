@@ -74,7 +74,7 @@ public class Speaker(string assetsDir = "assets")
         ["fearful"] = [144, 160, 176],
     };
 
-    private readonly ModelConfig _config = ModelConfig.Load(assetsDir);
+    private readonly ModelConfig _config = LoadConfigAndApplyOverrides(assetsDir);
     private readonly KokoroTokenizer _tokenizer = KokoroTokenizer.Load(Path.Combine(assetsDir, "tokenizer.json"));
 
     public string Voice { get; set; } = "Bella";
@@ -323,5 +323,12 @@ public class Speaker(string assetsDir = "assets")
             NamedOnnxValue.CreateFromTensor("style", styleTensor),
             NamedOnnxValue.CreateFromTensor("speed", speedTensor),
         ];
+    }
+
+    private static ModelConfig LoadConfigAndApplyOverrides(string assetsDir)
+    {
+        ModelConfig config = ModelConfig.Load(assetsDir);
+        EnglishToIpa.SetOverrides(config.PronunciationOverrides);
+        return config;
     }
 }

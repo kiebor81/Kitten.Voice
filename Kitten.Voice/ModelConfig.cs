@@ -10,6 +10,7 @@ public class ModelConfig
     public required string ModelPath { get; init; }
     public required string VoicesPath { get; init; }
     public Dictionary<string, string> VoiceAliases { get; init; } = [];
+    public Dictionary<string, string> PronunciationOverrides { get; init; } = [];
 
     /// <summary>
     /// Loads model configuration from the specified assets directory.
@@ -33,11 +34,24 @@ public class ModelConfig
                 aliases[prop.Name] = prop.Value.GetString()!;
         }
 
+        var overrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (root.TryGetProperty("pronunciation_overrides", out var overridesElement)
+            && overridesElement.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in overridesElement.EnumerateObject())
+            {
+                string? value = prop.Value.GetString();
+                if (!string.IsNullOrWhiteSpace(value))
+                    overrides[prop.Name] = value;
+            }
+        }
+
         return new ModelConfig
         {
             ModelPath = modelPath,
             VoicesPath = Path.Combine(assetsDir, root.GetProperty("voices").GetString()!),
             VoiceAliases = aliases,
+            PronunciationOverrides = overrides,
         };
     }
 

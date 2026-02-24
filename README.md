@@ -12,6 +12,7 @@
 
 - ONNX runtime inference (`Microsoft.ML.OnnxRuntime`)
 - Voice aliases from `assets/config.json`
+- Pronunciation overrides from `assets/config.json` (`pronunciation_overrides`)
 - SSML parsing for:
   - `speak`, `break`, `prosody`, `emphasis`, `voice`, `say-as`
   - custom emotion extensions: `emotion`, `express-as`
@@ -52,6 +53,16 @@ Place these files in `Kitten.Voice/assets`:
 - Which ONNX model file is loaded (`model_file`)
 - Which voice embeddings file is loaded (`voices`)
 - Friendly voice name aliases (`voice_aliases`)
+- Per-word ARPAbet pronunciation overrides (`pronunciation_overrides`)
+
+Example:
+
+```json
+"pronunciation_overrides": {
+  "SQL": "EH1 S K Y UW1 EH1 L",
+  "Kubernetes": "K UW2 B ER0 N EH1 T IY0 Z"
+}
+```
 
 ## Project structure
 

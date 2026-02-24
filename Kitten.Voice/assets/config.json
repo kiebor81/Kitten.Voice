@@ -15,5 +15,8 @@
     "Hugo": "expr-voice-4-m",
     "Kiki": "expr-voice-5-f",
     "Leo": "expr-voice-5-m"
- }
+ },
+  "pronunciation_overrides": {
+    "SSML": "EH1 S EH1 S EH1 M EH1 L"
+  }
 }
