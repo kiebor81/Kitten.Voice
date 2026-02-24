@@ -6,12 +6,15 @@ namespace Kitten.Voice.Tokenization;
 /// <summary>
 /// Tokenizes text for KittenTTS using the vocabulary from tokenizer.json.
 /// </summary>
-public class KokoroTokenizer
+internal sealed class KokoroTokenizer
 {
     private readonly Dictionary<string, int> _vocab;
     private readonly int _bosEosId;
 
-    public int VocabSize => _vocab.Count;
+    /// <summary>
+    /// The size of the tokenizer's vocabulary, including special tokens.
+    /// </summary>
+    internal int VocabSize => _vocab.Count;
 
     private KokoroTokenizer(Dictionary<string, int> vocab, int bosEosId)
     {
@@ -22,7 +25,9 @@ public class KokoroTokenizer
     /// <summary>
     /// Loads the tokenizer from a tokenizer.json file.
     /// </summary>
-    public static KokoroTokenizer Load(string path)
+    /// <param name="path">The path to the tokenizer.json file.</param>
+    /// <returns>A <see cref="KokoroTokenizer"/> instance.</returns>
+    internal static KokoroTokenizer Load(string path)
     {
         if (!File.Exists(path))
             throw new FileNotFoundException("Tokenizer file not found", path);
@@ -44,7 +49,7 @@ public class KokoroTokenizer
     /// <summary>
     /// Converts English text to IPA phonemes and tokenizes for the model.
     /// </summary>
-    public long[] Process(string text)
+    internal long[] Process(string text)
     {
         string phonemes = EnglishToIpa.Convert(text);
         return Tokenize(phonemes);
@@ -53,7 +58,7 @@ public class KokoroTokenizer
     /// <summary>
     /// Tokenizes an IPA phoneme string into token IDs, wrapped with BOS/EOS tokens.
     /// </summary>
-    public long[] Tokenize(string phonemes)
+    internal long[] Tokenize(string phonemes)
     {
         var ids = new List<long> { _bosEosId };
 

@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.37012.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kitten.Voice", "Kitten.Voice.csproj", "{70704BEC-63F2-4C4B-999B-A47493995D15}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kitten.Voice", "Kitten.Voice\Kitten.Voice.csproj", "{70704BEC-63F2-4C4B-999B-A47493995D15}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kitten.Voice.UI", "..\Kitten.Voice.UI\Kitten.Voice.UI.csproj", "{DDA97340-6723-4527-8F61-A71F0F8A58AE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kitten.Voice.UI", "Kitten.Voice.UI\Kitten.Voice.UI.csproj", "{DDA97340-6723-4527-8F61-A71F0F8A58AE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

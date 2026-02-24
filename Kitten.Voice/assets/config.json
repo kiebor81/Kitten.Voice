@@ -17,6 +17,7 @@
     "Leo": "expr-voice-5-m"
  },
   "pronunciation_overrides": {
-    "SSML": "EH1 S EH1 S EH1 M EH1 L"
+    "SSML": "EH1 S EH1 S EH1 M EH1 L",
+    "configurable": "K AH0 N F IH1 G Y ER0 AH0 B AH0 L"
   }
 }

@@ -5,6 +5,13 @@ namespace Kitten.Voice.TextProcessing;
 /// </summary>
 internal static class TextChunker
 {
+    /// <summary>
+    /// Splits the input text into chunks that satisfy the specified token count limit, using the provided token counting function.
+    /// </summary>
+    /// <param name="text"></param>
+    /// <param name="maxTokenCount"></param>
+    /// <param name="getTokenCount"></param>
+    /// <returns></returns>
     public static List<string> SplitByTokenLimit(string text, int maxTokenCount, Func<string, int> getTokenCount)
     {
         string trimmed = text.Trim();

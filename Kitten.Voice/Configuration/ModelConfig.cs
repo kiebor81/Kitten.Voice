@@ -5,17 +5,29 @@ namespace Kitten.Voice.Configuration;
 /// <summary>
 /// Loads and resolves model configuration from config.json.
 /// </summary>
-public class ModelConfig
+internal sealed class ModelConfig
 {
-    public required string ModelPath { get; init; }
-    public required string VoicesPath { get; init; }
-    public Dictionary<string, string> VoiceAliases { get; init; } = [];
-    public Dictionary<string, string> PronunciationOverrides { get; init; } = [];
+    /// <summary>
+    /// Path to the model file (e.g. .bin or .gguf) relative to the assets directory.
+    /// </summary>
+    internal required string ModelPath { get; init; }
+    /// <summary>
+    /// Path to the voices directory relative to the assets directory. This directory should contain voice embedding files (e.g. .bin or .gguf) and a "voices.json" file with metadata.
+    /// </summary>
+    internal required string VoicesPath { get; init; }
+    /// <summary>
+    /// Optional mapping of friendly voice names to internal embedding names. This allows users to refer to voices by more intuitive names in prompts. If a voice name is not found in this mapping, it will be used as-is when looking up the embedding file.
+    /// </summary>
+    internal Dictionary<string, string> VoiceAliases { get; init; } = [];
+    /// <summary>
+    /// Optional mapping of words or phrases to their desired phonetic pronunciations. This can be used to correct mispronunciations or specify pronunciations for uncommon words. The keys are the original words/phrases, and the values are the phonetic representations (e.g. using IPA or a custom phonetic notation). During synthesis, occurrences of the keys in the input text will be replaced with their corresponding phonetic values before being processed by the model.
+    /// </summary>
+    internal Dictionary<string, string> PronunciationOverrides { get; init; } = [];
 
     /// <summary>
     /// Loads model configuration from the specified assets directory.
     /// </summary>
-    public static ModelConfig Load(string assetsDir)
+    internal static ModelConfig Load(string assetsDir)
     {
         string configPath = Path.Combine(assetsDir, "config.json");
         if (!File.Exists(configPath))
@@ -59,6 +71,6 @@ public class ModelConfig
     /// Resolves a friendly voice name to its internal embedding name.
     /// Returns the input unchanged if no alias is found.
     /// </summary>
-    public string ResolveVoice(string voiceName) =>
+    internal string ResolveVoice(string voiceName) =>
         VoiceAliases.TryGetValue(voiceName, out string? resolved) ? resolved : voiceName;
 }

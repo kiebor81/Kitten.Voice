@@ -21,12 +21,12 @@ namespace Kitten.Voice.Ssml;
 ///   <item><c>&lt;express-as style="calm" styledegree="1.2"&gt;</c> alias for emotion style</item>
 /// </list>
 /// </remarks>
-public static partial class SsmlParser
+internal static partial class SsmlParser
 {
     /// <summary>
     /// Parses text (SSML or plain) into speech segments.
     /// </summary>
-    public static List<SpeechSegment> Parse(string input)
+    internal static List<SpeechSegment> Parse(string input)
     {
         string trimmed = input.Trim();
 
@@ -55,7 +55,7 @@ public static partial class SsmlParser
     /// <summary>
     /// Returns true if the input looks like SSML (starts with &lt;).
     /// </summary>
-    public static bool IsSsml(string input) =>
+    internal static bool IsSsml(string input) =>
         input.TrimStart().StartsWith('<');
 
     private static void ParseElement(

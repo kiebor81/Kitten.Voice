@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 using Kitten.Voice;
-using Kitten.Voice.Configuration;
+using System.Globalization;
 using System.Security;
 
 namespace Kitten.Voice.UI;
@@ -23,6 +23,8 @@ public partial class MainWindow : Window
 
         VoiceComboBox.SelectedItem = voices.FirstOrDefault() ?? "Bella";
         BuilderVoiceComboBox.SelectedItem = voices.FirstOrDefault() ?? "Bella";
+        PlainSpeedComboBox.ItemsSource = new[] { "0.8", "1.0", "1.2", "1.3", "1.5", "1.8" };
+        PlainSpeedComboBox.SelectedItem = "1.3";
 
         EmotionComboBox.ItemsSource = new[] { "none", "happy", "excited", "sad", "angry", "calm", "fearful" };
         EmotionComboBox.SelectedItem = "none";
@@ -47,8 +49,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var config = ModelConfig.Load(assetsPath);
-            return [.. config.VoiceAliases.Keys.OrderBy(v => v)];
+            return Speaker.GetAvailableVoices(assetsPath);
         }
         catch
         {
@@ -66,7 +67,8 @@ public partial class MainWindow : Window
         }
 
         string voice = (VoiceComboBox.SelectedItem as string) ?? "Bella";
-        await SpeakAsync(text, voice, "Text played.");
+        float speed = GetSelectedPlainSpeed();
+        await SpeakAsync(text, voice, "Text played.", speed);
     }
 
     private void GenerateSsmlButton_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -109,17 +111,41 @@ public partial class MainWindow : Window
         return $"<speak><voice name=\"{voice}\">{content}</voice></speak>";
     }
 
-    private async Task SpeakAsync(string input, string voice, string successMessage)
+    private float GetSelectedPlainSpeed()
     {
-        SetStatus($"Speaking as {voice}...");
+        if (PlainSpeedComboBox.SelectedItem is string speedText
+            && float.TryParse(speedText, NumberStyles.Float, CultureInfo.InvariantCulture, out float speed)
+            && speed > 0f)
+        {
+            return speed;
+        }
+
+        return _speaker.Speed;
+    }
+
+    private async Task SpeakAsync(string input, string voice, string successMessage, float? speedOverride = null)
+    {
+        float effectiveSpeed = speedOverride ?? _speaker.Speed;
+        SetStatus($"Speaking as {voice} ({effectiveSpeed:0.##}x)...");
 
         await _speakLock.WaitAsync();
         try
         {
             await Task.Run(() =>
             {
+                float savedSpeed = _speaker.Speed;
                 _speaker.Voice = voice;
-                _speaker.Say(input);
+                try
+                {
+                    if (speedOverride.HasValue)
+                        _speaker.Speed = speedOverride.Value;
+
+                    _speaker.Say(input);
+                }
+                finally
+                {
+                    _speaker.Speed = savedSpeed;
+                }
             });
             SetStatus(successMessage);
         }

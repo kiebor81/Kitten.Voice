@@ -4,7 +4,7 @@ namespace Kitten.Voice.Ssml;
 /// Represents a segment of text with associated speech properties,
 /// produced by parsing SSML markup.
 /// </summary>
-public class SpeechSegment
+internal sealed class SpeechSegment
 {
     /// <summary>The text content to synthesize.</summary>
     public string Text { get; init; } = "";

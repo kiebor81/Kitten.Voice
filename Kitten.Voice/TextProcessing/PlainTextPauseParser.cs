@@ -5,6 +5,11 @@ namespace Kitten.Voice.TextProcessing;
 /// </summary>
 internal static class PlainTextPauseParser
 {
+    /// <summary>
+    /// Checks if the text contains any pause cues that would require splitting into segments.
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
     public static bool ContainsPauseCue(string text)
     {
         return text.IndexOfAny(['\r', '\n', '\u2026', '\u2014']) >= 0
@@ -106,4 +111,9 @@ internal static class PlainTextPauseParser
     }
 }
 
+/// <summary>
+/// Represents a segment of text along with the pause duration that should follow it when spoken.
+/// </summary>
+/// <param name="Text">The text of the segment.</param>
+/// <param name="PauseAfter">The duration of the pause that should follow the segment.</param>
 internal readonly record struct PlainTextPauseSegment(string Text, TimeSpan PauseAfter);

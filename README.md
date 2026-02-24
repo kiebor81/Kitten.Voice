@@ -68,15 +68,11 @@ Example:
 ## Project structure
 
 ```text
-/
-  README.md
-  SSML_REFERENCE.md
   Kitten.Voice/
-    Kitten.Voice.sln
-    Kitten.Voice.csproj
     Speaker.cs
     Audio/
     Configuration/
+    Embeddings/
     Ssml/
     TextProcessing/
     Tokenization/
@@ -91,7 +87,7 @@ Example:
 From repository root:
 
 ```powershell
-dotnet build Kitten.Voice/Kitten.Voice.sln
+dotnet build Kitten.Voice.sln
 ```
 
 ## Run the UI
@@ -183,6 +179,6 @@ SSML Parsing is experimental and far from a complete implementation. For full SS
 
 ## Notes for development
 
-- Solution path: `Kitten.Voice/Kitten.Voice.sln`
+- Solution path: `Kitten.Voice.sln`
 - Main synthesis entry point: `Kitten.Voice/Speaker.cs`
 - SSML parser: `Kitten.Voice/Ssml/SsmlParser.cs`
