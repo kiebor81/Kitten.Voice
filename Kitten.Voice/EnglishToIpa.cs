@@ -160,7 +160,7 @@ public static class EnglishToIpa
             normalized = normalized[..^1];
         }
 
-        string[] words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        string[] words = normalized.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
 
         for (int w = 0; w < words.Length; w++)
         {

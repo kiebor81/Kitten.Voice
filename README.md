@@ -13,6 +13,7 @@
 - ONNX runtime inference (`Microsoft.ML.OnnxRuntime`)
 - Voice aliases from `assets/config.json`
 - Pronunciation overrides from `assets/config.json` (`pronunciation_overrides`)
+- Plain-text pause cues for newline, ellipsis (`...` / `…`), and em dash (`—`)
 - SSML parsing for:
   - `speak`, `break`, `prosody`, `emphasis`, `voice`, `say-as`
   - custom emotion extensions: `emotion`, `express-as`
@@ -98,9 +99,9 @@ dotnet run --project Kitten.Voice.UI/Kitten.Voice.UI.csproj
 
 UI supports:
 
-- Plain text input with voice picker and `Send To Play`
+- Plain text input with voice picker
 - SSML builder with emotion/prosody controls
-- SSML preview and `Send To Play`
+- SSML preview
 
 ## Use the library in code
 
