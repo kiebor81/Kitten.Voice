@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-namespace Kitten.Voice;
+namespace Kitten.Voice.Ssml;
 
 /// <summary>
 /// Parses a subset of SSML into <see cref="SpeechSegment"/> objects.

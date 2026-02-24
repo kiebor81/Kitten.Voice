@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Kitten.Voice;
+namespace Kitten.Voice.TextProcessing;
 
 /// <summary>
 /// English grapheme-to-phoneme converter.

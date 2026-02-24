@@ -1,4 +1,4 @@
-namespace Kitten.Voice;
+namespace Kitten.Voice.Embeddings;
 
 /// <summary>
 /// Reads NumPy .npy binary files containing 2D float32 arrays.

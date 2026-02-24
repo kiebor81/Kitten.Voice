@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace Kitten.Voice;
+namespace Kitten.Voice.Embeddings;
 
 /// <summary>
 /// Loads voice style embeddings from .npz archives.

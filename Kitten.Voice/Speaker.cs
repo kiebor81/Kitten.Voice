@@ -1,5 +1,11 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using Kitten.Voice.Audio;
+using Kitten.Voice.Configuration;
+using Kitten.Voice.Ssml;
+using Kitten.Voice.TextProcessing;
+using Kitten.Voice.Tokenization;
+using Kitten.Voice.Embeddings;
 
 namespace Kitten.Voice;
 
@@ -28,6 +34,7 @@ public class Speaker(string assetsDir = "assets")
 {
     private const int SampleRate = 24000;
     private const int MaxInputTokenCount = 500;
+    private static readonly TimeSpan MaxAggregatedTextPause = TimeSpan.FromMilliseconds(1200);
     private static readonly TimeSpan NewlinePause = TimeSpan.FromMilliseconds(220);
     private static readonly TimeSpan EllipsisPause = TimeSpan.FromMilliseconds(280);
     private static readonly TimeSpan EmDashPause = TimeSpan.FromMilliseconds(170);
@@ -200,7 +207,7 @@ public class Speaker(string assetsDir = "assets")
     /// </summary>
     public float[] Synthesize(string text, int? styleRowOverride = null, float styleBlend = 1.0f)
     {
-        if (ContainsTextPauseCue(text))
+        if (PlainTextPauseParser.ContainsPauseCue(text))
             return SynthesizeWithTextPauses(text, styleRowOverride, styleBlend);
 
         string normalized = EnsureTrailingPunctuation(text);
@@ -227,13 +234,17 @@ public class Speaker(string assetsDir = "assets")
 
     private float[] SynthesizeWithTextPauses(string text, int? styleRowOverride, float styleBlend)
     {
-        List<(string Text, TimeSpan PauseAfter)> segments = SplitByPauseCues(text);
+        List<PlainTextPauseSegment> segments = PlainTextPauseParser.Split(
+            text,
+            NewlinePause,
+            EllipsisPause,
+            EmDashPause);
         var audioSegments = new List<float[]>();
         TimeSpan pendingPause = TimeSpan.Zero;
 
-        foreach ((string rawText, TimeSpan pauseAfter) in segments)
+        foreach (PlainTextPauseSegment segmentInfo in segments)
         {
-            string segment = rawText.Trim();
+            string segment = segmentInfo.Text.Trim();
             if (segment.Length > 0)
             {
                 if (audioSegments.Count > 0 && pendingPause > TimeSpan.Zero)
@@ -246,9 +257,10 @@ public class Speaker(string assetsDir = "assets")
                 pendingPause = TimeSpan.Zero;
             }
 
+            TimeSpan pauseAfter = segmentInfo.PauseAfter;
             if (pauseAfter > TimeSpan.Zero)
                 pendingPause = TimeSpan.FromMilliseconds(
-                    Math.Min((pendingPause + pauseAfter).TotalMilliseconds, 1200));
+                    Math.Min((pendingPause + pauseAfter).TotalMilliseconds, MaxAggregatedTextPause.TotalMilliseconds));
         }
 
         return audioSegments.Count > 0
@@ -258,7 +270,7 @@ public class Speaker(string assetsDir = "assets")
 
     private float[] SynthesizeChunked(string text, int? styleRowOverride, float styleBlend)
     {
-        List<string> chunks = SplitTextByTokenLimit(text, MaxInputTokenCount);
+        List<string> chunks = TextChunker.SplitByTokenLimit(text, MaxInputTokenCount, GetTokenCount);
         if (chunks.Count == 0)
             return [];
 
@@ -280,179 +292,10 @@ public class Speaker(string assetsDir = "assets")
             : [];
     }
 
-    private List<string> SplitTextByTokenLimit(string text, int maxTokenCount)
-    {
-        string trimmed = text.Trim();
-        if (trimmed.Length == 0)
-            return [];
-
-        string[] units = trimmed.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        var chunks = new List<string>();
-        var current = new System.Text.StringBuilder();
-
-        foreach (string unit in units)
-        {
-            string candidate = current.Length == 0 ? unit : $"{current} {unit}";
-            if (GetTokenCount(candidate) <= maxTokenCount)
-            {
-                if (current.Length > 0)
-                    current.Append(' ');
-                current.Append(unit);
-                continue;
-            }
-
-            if (current.Length > 0)
-            {
-                chunks.Add(current.ToString());
-                current.Clear();
-            }
-
-            if (GetTokenCount(unit) <= maxTokenCount)
-            {
-                current.Append(unit);
-                continue;
-            }
-
-            chunks.AddRange(SplitTokenByCharacterLimit(unit, maxTokenCount));
-        }
-
-        if (current.Length > 0)
-            chunks.Add(current.ToString());
-
-        return chunks;
-    }
-
-    private List<string> SplitTokenByCharacterLimit(string token, int maxTokenCount)
-    {
-        var pieces = new List<string>();
-        var current = new System.Text.StringBuilder();
-
-        foreach (char c in token)
-        {
-            string candidate = current.Length == 0 ? c.ToString() : $"{current}{c}";
-            if (GetTokenCount(candidate) <= maxTokenCount)
-            {
-                current.Append(c);
-                continue;
-            }
-
-            if (current.Length == 0)
-            {
-                throw new InvalidOperationException(
-                    $"Input token '{token}' cannot be split to satisfy model token limit {maxTokenCount}.");
-            }
-
-            pieces.Add(current.ToString());
-            current.Clear();
-            current.Append(c);
-        }
-
-        if (current.Length > 0)
-            pieces.Add(current.ToString());
-
-        return pieces;
-    }
-
     private int GetTokenCount(string text)
     {
         string normalized = EnsureTrailingPunctuation(text);
         return _tokenizer.Process(normalized).Length;
-    }
-
-    private static bool ContainsTextPauseCue(string text)
-    {
-        return text.IndexOfAny(['\r', '\n', '…', '—']) >= 0
-            || text.Contains("...", StringComparison.Ordinal);
-    }
-
-    private static List<(string Text, TimeSpan PauseAfter)> SplitByPauseCues(string text)
-    {
-        var segments = new List<(string Text, TimeSpan PauseAfter)>();
-        var current = new System.Text.StringBuilder();
-        int i = 0;
-
-        while (i < text.Length)
-        {
-            char c = text[i];
-
-            if (c == '—')
-            {
-                int dashes = ConsumeRepeatedChar(text, ref i, '—');
-                segments.Add((current.ToString(), ScalePauseByCount(EmDashPause, dashes)));
-                current.Clear();
-                continue;
-            }
-
-            if (c == '…')
-            {
-                int ellipses = ConsumeRepeatedChar(text, ref i, '…');
-                segments.Add((current.ToString(), ScalePauseByCount(EllipsisPause, ellipses)));
-                current.Clear();
-                continue;
-            }
-
-            if (c == '.' && i + 2 < text.Length && text[i + 1] == '.' && text[i + 2] == '.')
-            {
-                int dotCount = ConsumeRepeatedChar(text, ref i, '.');
-                int ellipsisCount = Math.Max(1, dotCount / 3);
-                segments.Add((current.ToString(), ScalePauseByCount(EllipsisPause, ellipsisCount)));
-                current.Clear();
-
-                int remainder = dotCount % 3;
-                for (int r = 0; r < remainder; r++)
-                    current.Append('.');
-
-                continue;
-            }
-
-            if (c is '\r' or '\n')
-            {
-                int breaks = 0;
-                while (i < text.Length && text[i] is '\r' or '\n')
-                {
-                    if (text[i] == '\r')
-                    {
-                        breaks++;
-                        if (i + 1 < text.Length && text[i + 1] == '\n')
-                            i++;
-                    }
-                    else
-                    {
-                        breaks++;
-                    }
-
-                    i++;
-                }
-
-                segments.Add((current.ToString(), ScalePauseByCount(NewlinePause, breaks)));
-                current.Clear();
-                continue;
-            }
-
-            current.Append(c);
-            i++;
-        }
-
-        segments.Add((current.ToString(), TimeSpan.Zero));
-        return segments;
-    }
-
-    private static int ConsumeRepeatedChar(string text, ref int index, char token)
-    {
-        int count = 0;
-        while (index < text.Length && text[index] == token)
-        {
-            count++;
-            index++;
-        }
-
-        return count;
-    }
-
-    private static TimeSpan ScalePauseByCount(TimeSpan basePause, int count)
-    {
-        int normalized = Math.Clamp(count, 1, 4);
-        return TimeSpan.FromMilliseconds(basePause.TotalMilliseconds * normalized);
     }
 
     private float[] RunInference(long[] tokenIds, float[] styleVector)

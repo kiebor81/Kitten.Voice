@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Kitten.Voice;
+namespace Kitten.Voice.Configuration;
 
 /// <summary>
 /// Loads and resolves model configuration from config.json.

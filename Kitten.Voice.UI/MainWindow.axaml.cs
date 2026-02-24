@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Kitten.Voice;
+using Kitten.Voice.Configuration;
 using System.Security;
 
 namespace Kitten.Voice.UI;

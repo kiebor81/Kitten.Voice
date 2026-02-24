@@ -1,6 +1,7 @@
 using System.Text.Json;
+using Kitten.Voice.TextProcessing;
 
-namespace Kitten.Voice;
+namespace Kitten.Voice.Tokenization;
 
 /// <summary>
 /// Tokenizes text for KittenTTS using the vocabulary from tokenizer.json.

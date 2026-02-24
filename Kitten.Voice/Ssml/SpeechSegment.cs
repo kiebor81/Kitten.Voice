@@ -1,4 +1,4 @@
-namespace Kitten.Voice;
+namespace Kitten.Voice.Ssml;
 
 /// <summary>
 /// Represents a segment of text with associated speech properties,

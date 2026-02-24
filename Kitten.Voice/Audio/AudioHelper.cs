@@ -1,6 +1,6 @@
 using NAudio.Wave;
 
-namespace Kitten.Voice;
+namespace Kitten.Voice.Audio;
 
 /// <summary>
 /// Handles WAV file writing, normalization, and playback.

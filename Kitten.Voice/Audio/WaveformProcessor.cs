@@ -1,4 +1,4 @@
-namespace Kitten.Voice;
+namespace Kitten.Voice.Audio;
 
 /// <summary>
 /// Post-processing effects applied to synthesized waveforms.

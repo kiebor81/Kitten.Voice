@@ -75,8 +75,11 @@ Example:
     Kitten.Voice.sln
     Kitten.Voice.csproj
     Speaker.cs
-    SsmlParser.cs
-    WaveformProcessor.cs
+    Audio/
+    Configuration/
+    Ssml/
+    TextProcessing/
+    Tokenization/
     assets/
   Kitten.Voice.UI/
     Kitten.Voice.UI.csproj
@@ -182,4 +185,4 @@ SSML Parsing is experimental and far from a complete implementation. For full SS
 
 - Solution path: `Kitten.Voice/Kitten.Voice.sln`
 - Main synthesis entry point: `Kitten.Voice/Speaker.cs`
-- SSML parser: `Kitten.Voice/SsmlParser.cs`
+- SSML parser: `Kitten.Voice/Ssml/SsmlParser.cs`
