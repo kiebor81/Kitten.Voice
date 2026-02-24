@@ -1,6 +1,6 @@
 # Kitten.Voice
 
-`Kitten.Voice` is a .NET 9 text-to-speech library and test UI for KittenTTS/Kokoro-style ONNX inference with SSML pre-parsing and waveform post-processing.
+`Kitten.Voice` is a .NET 9 text-to-speech library and test UI for [KittenTTS](https://github.com/KittenML) with SSML pre-parsing and waveform post-processing.
 
 ## What is included
 
@@ -171,4 +171,3 @@ SSML Parsing is experimental and far from a complete implementation. For full SS
 - Solution path: `Kitten.Voice/Kitten.Voice.sln`
 - Main synthesis entry point: `Kitten.Voice/Speaker.cs`
 - SSML parser: `Kitten.Voice/SsmlParser.cs`
-- UI entry point: `Kitten.Voice.UI/Program.cs`
