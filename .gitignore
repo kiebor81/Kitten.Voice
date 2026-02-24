@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.tmp
+*.log
+output.wav
+*.onnx
+voices.npz
+cmudict.dict
