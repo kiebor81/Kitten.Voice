@@ -42,7 +42,10 @@ internal static class TextSynthesisEngine
             text,
             timing.NewlinePause,
             timing.EllipsisPause,
-            timing.EmDashPause);
+            timing.EmDashPause,
+            timing.CommaPause,
+            timing.SemicolonPause,
+            timing.ColonPause);
         var audioSegments = new List<float[]>();
         TimeSpan pendingPause = TimeSpan.Zero;
 

@@ -1,7 +1,7 @@
 namespace Kitten.Voice.TextProcessing;
 
 /// <summary>
-/// Parses plain-text pause cues (line breaks, ellipsis, em dash) into speakable segments.
+/// Parses plain-text pause cues (line breaks, ellipsis, em dash, comma, colon, semicolon) into speakable segments.
 /// </summary>
 internal static class PlainTextPauseParser
 {
@@ -10,17 +10,20 @@ internal static class PlainTextPauseParser
     /// </summary>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static bool ContainsPauseCue(string text)
+    internal static bool ContainsPauseCue(string text)
     {
-        return text.IndexOfAny(['\r', '\n', '\u2026', '\u2014']) >= 0
+        return text.IndexOfAny(['\r', '\n', '\u2026', '\u2014', ',', ';', ':']) >= 0
             || text.Contains("...", StringComparison.Ordinal);
     }
 
-    public static List<PlainTextPauseSegment> Split(
+    internal static List<PlainTextPauseSegment> Split(
         string text,
         TimeSpan newlinePause,
         TimeSpan ellipsisPause,
-        TimeSpan emDashPause)
+        TimeSpan emDashPause,
+        TimeSpan commaPause,
+        TimeSpan semicolonPause,
+        TimeSpan colonPause)
     {
         var segments = new List<PlainTextPauseSegment>();
         var current = new System.Text.StringBuilder();
@@ -57,6 +60,30 @@ internal static class PlainTextPauseParser
                 for (int r = 0; r < remainder; r++)
                     current.Append('.');
 
+                continue;
+            }
+
+            if (c == ',' && !IsIntraNumericPunctuation(text, i))
+            {
+                int commas = ConsumeRepeatedChar(text, ref i, ',');
+                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(commaPause, commas)));
+                current.Clear();
+                continue;
+            }
+
+            if (c == ';')
+            {
+                int semicolons = ConsumeRepeatedChar(text, ref i, ';');
+                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(semicolonPause, semicolons)));
+                current.Clear();
+                continue;
+            }
+
+            if (c == ':' && !IsIntraNumericPunctuation(text, i) && !IsLikelyUrlSchemeSeparator(text, i))
+            {
+                int colons = ConsumeRepeatedChar(text, ref i, ':');
+                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(colonPause, colons)));
+                current.Clear();
                 continue;
             }
 
@@ -108,6 +135,24 @@ internal static class PlainTextPauseParser
     {
         int normalized = Math.Clamp(count, 1, 4);
         return TimeSpan.FromMilliseconds(basePause.TotalMilliseconds * normalized);
+    }
+
+    private static bool IsIntraNumericPunctuation(string text, int index)
+    {
+        if (index <= 0 || index >= text.Length - 1)
+            return false;
+
+        return char.IsDigit(text[index - 1]) && char.IsDigit(text[index + 1]);
+    }
+
+    private static bool IsLikelyUrlSchemeSeparator(string text, int index)
+    {
+        if (index < 2 || index + 2 >= text.Length)
+            return false;
+
+        return text[index + 1] == '/'
+            && text[index + 2] == '/'
+            && char.IsLetter(text[index - 1]);
     }
 }
 
