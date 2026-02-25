@@ -1,19 +1,28 @@
-# Kitten.Voice
+﻿# Kitten.Voice
 
-`Kitten.Voice` is a .NET 9 text-to-speech library and test UI for [KittenTTS](https://github.com/KittenML) with SSML pre-parsing and waveform post-processing.
+`Kitten.Voice` is a .NET 9 text-to-speech library and test UI for [KittenTTS](https://github.com/KittenML), with SSML parsing and waveform post-processing.
 
-## What is included
+## What Is Included
 
-- `Kitten.Voice`: Core synthesis library
-- `Kitten.Voice.UI`: Avalonia desktop test app (dark mode by default)
+- `Kitten.Voice`: core synthesis library
+- `Kitten.Voice.UI`: Avalonia desktop test app
 - `SSML_REFERENCE.md`: focused SSML reference used by this project
 
 ## Features
 
 - ONNX runtime inference (`Microsoft.ML.OnnxRuntime`)
+- Reused ONNX inference sessions per model path (lower per-call overhead)
+- Cached voice embeddings loaded from `voices.npz`
 - Voice aliases from `assets/config.json`
 - Pronunciation overrides from `assets/config.json` (`pronunciation_overrides`)
-- Plain-text pause cues for newline, ellipsis (`...` / `…`), and em dash (`—`)
+- Configurable CMU dictionary path from `assets/config.json` (`cmu_dict_file`)
+- Plain-text pause cues for:
+  - newline
+  - ellipsis (`...` and `…`)
+  - em dash (`—`)
+  - comma, semicolon, colon
+  - period, question mark, exclamation mark
+- Heuristic punctuation inflection for plain text segment tails (`?` and `!`)
 - SSML parsing for:
   - `speak`, `break`, `prosody`, `emphasis`, `voice`, `say-as`
   - custom emotion extensions: `emotion`, `express-as`
@@ -27,7 +36,7 @@
 ## Requirements
 
 - .NET SDK 9.0+
-- Windows recommended for playback (NAudio-based output path)
+- Windows recommended for playback (NAudio output path)
 - Model assets are not committed to this repository and must be downloaded manually.
 - Required files in `Kitten.Voice/assets`:
   - `kitten_tts_mini_v0_8.onnx`
@@ -36,7 +45,7 @@
   - `config.json`
   - `cmudict.dict`
 
-## Download required assets
+## Download Required Assets
 
 Place these files in `Kitten.Voice/assets`:
 
@@ -47,12 +56,13 @@ Place these files in `Kitten.Voice/assets`:
 - CMU Pronouncing Dictionary (`cmudict.dict`):
   - https://github.com/cmusphinx/cmudict
 
-## config.json role
+## `config.json` Role
 
 `Kitten.Voice/assets/config.json` is used at runtime to control:
 
 - Which ONNX model file is loaded (`model_file`)
 - Which voice embeddings file is loaded (`voices`)
+- Which CMU dictionary file is loaded (`cmu_dict_file`)
 - Friendly voice name aliases (`voice_aliases`)
 - Per-word ARPAbet pronunciation overrides (`pronunciation_overrides`)
 
@@ -65,21 +75,21 @@ Example:
 }
 ```
 
-## Project structure
+## Project Structure
 
 ```text
-  Kitten.Voice/
-    Speaker.cs
-    Audio/
-    Configuration/
-    Embeddings/
-    Ssml/
-    TextProcessing/
-    Tokenization/
-    assets/
-  Kitten.Voice.UI/
-    Kitten.Voice.UI.csproj
-    MainWindow.axaml
+Kitten.Voice/
+  Speaker.cs
+  Audio/
+  Configuration/
+  Embeddings/
+  Ssml/
+  TextProcessing/
+  Tokenization/
+  assets/
+Kitten.Voice.UI/
+  Kitten.Voice.UI.csproj
+  MainWindow.axaml
 ```
 
 ## Build
@@ -102,7 +112,7 @@ UI supports:
 - SSML builder with emotion/prosody controls
 - SSML preview
 
-## Use the library in code
+## Use the Library in Code
 
 ```csharp
 using Kitten.Voice;
@@ -118,13 +128,15 @@ var speaker = new Speaker("Kitten.Voice/assets")
 speaker.Say("Hello from Kitten Voice.");
 ```
 
-### Output modes
+### Output Modes
 
 - `AudioOutput.Stream`: play directly from memory
 - `AudioOutput.File`: save WAV then play
 - `AudioOutput.FileOnly`: save WAV only
 
-## Supported voices (default config based on KittenTTS voices.npz)
+## Supported Voices
+
+Default aliases in `config.json`:
 
 - `Bella`
 - `Jasper`
@@ -135,11 +147,7 @@ speaker.Say("Hello from Kitten Voice.");
 - `Kiki`
 - `Leo`
 
-Voice aliases are configured in:
-
-- `Kitten.Voice/assets/config.json`
-
-## SSML quick examples
+## SSML Quick Examples
 
 Plain SSML:
 
@@ -159,16 +167,14 @@ Emotion + prosody:
 </speak>
 ```
 
-For complete tag details, see:
+For complete tag details, see `SSML_REFERENCE.md`.
 
-- `SSML_REFERENCE.md`
-
-SSML Parsing is experimental and far from a complete implementation. For full SSML capable models, cloud hosted options exist.
+SSML parsing is experimental and is not a complete SSML implementation.
 
 ## Troubleshooting
 
 - `Config file not found` / `Model file not found`:
-  - Verify `assets` path passed to `Speaker(...)`
+  - Verify the `assets` path passed to `Speaker(...)`
 - No audio:
   - Check output device and output mode (`Stream` vs `File`)
 - Distortion with imported voices:
@@ -177,7 +183,7 @@ SSML Parsing is experimental and far from a complete implementation. For full SS
 - SSML not parsed:
   - Input must start with `<` or be wrapped by `<speak>...</speak>`
 
-## Notes for development
+## Notes for Development
 
 - Solution path: `Kitten.Voice.sln`
 - Main synthesis entry point: `Kitten.Voice/Speaker.cs`
