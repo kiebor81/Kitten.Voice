@@ -1,7 +1,8 @@
 namespace Kitten.Voice.TextProcessing;
 
 /// <summary>
-/// Parses plain-text pause cues (line breaks, ellipsis, em dash, comma, colon, semicolon) into speakable segments.
+/// Parses plain-text pause cues (line breaks, ellipsis, em dash, comma, colon, semicolon, sentence punctuation)
+/// into speakable segments.
 /// </summary>
 internal static class PlainTextPauseParser
 {
@@ -12,7 +13,7 @@ internal static class PlainTextPauseParser
     /// <returns></returns>
     internal static bool ContainsPauseCue(string text)
     {
-        return text.IndexOfAny(['\r', '\n', '\u2026', '\u2014', ',', ';', ':']) >= 0
+        return text.IndexOfAny(['\r', '\n', '\u2026', '\u2014', ',', ';', ':', '.', '?', '!']) >= 0
             || text.Contains("...", StringComparison.Ordinal);
     }
 
@@ -23,7 +24,10 @@ internal static class PlainTextPauseParser
         TimeSpan emDashPause,
         TimeSpan commaPause,
         TimeSpan semicolonPause,
-        TimeSpan colonPause)
+        TimeSpan colonPause,
+        TimeSpan periodPause,
+        TimeSpan questionPause,
+        TimeSpan exclamationPause)
     {
         var segments = new List<PlainTextPauseSegment>();
         var current = new System.Text.StringBuilder();
@@ -41,6 +45,36 @@ internal static class PlainTextPauseParser
                 continue;
             }
 
+            if (c == '.')
+            {
+                if (i + 2 < text.Length && text[i + 1] == '.' && text[i + 2] == '.')
+                {
+                    int dotCount = ConsumeRepeatedChar(text, ref i, '.');
+                    int ellipsisCount = Math.Max(1, dotCount / 3);
+                    segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(ellipsisPause, ellipsisCount)));
+                    current.Clear();
+
+                    int remainder = dotCount % 3;
+                    for (int r = 0; r < remainder; r++)
+                        current.Append('.');
+
+                    continue;
+                }
+
+                if (IsIntraNumericPunctuation(text, i) || IsLikelyDotJoiner(text, i))
+                {
+                    current.Append('.');
+                    i++;
+                    continue;
+                }
+
+                int periods = ConsumeRepeatedChar(text, ref i, '.');
+                current.Append('.');
+                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(periodPause, periods)));
+                current.Clear();
+                continue;
+            }
+
             if (c == '\u2026')
             {
                 int ellipses = ConsumeRepeatedChar(text, ref i, '\u2026');
@@ -49,17 +83,21 @@ internal static class PlainTextPauseParser
                 continue;
             }
 
-            if (c == '.' && i + 2 < text.Length && text[i + 1] == '.' && text[i + 2] == '.')
+            if (c == '?')
             {
-                int dotCount = ConsumeRepeatedChar(text, ref i, '.');
-                int ellipsisCount = Math.Max(1, dotCount / 3);
-                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(ellipsisPause, ellipsisCount)));
+                int questions = ConsumeRepeatedChar(text, ref i, '?');
+                current.Append('?');
+                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(questionPause, questions)));
                 current.Clear();
+                continue;
+            }
 
-                int remainder = dotCount % 3;
-                for (int r = 0; r < remainder; r++)
-                    current.Append('.');
-
+            if (c == '!')
+            {
+                int exclamations = ConsumeRepeatedChar(text, ref i, '!');
+                current.Append('!');
+                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(exclamationPause, exclamations)));
+                current.Clear();
                 continue;
             }
 
@@ -154,6 +192,16 @@ internal static class PlainTextPauseParser
             && text[index + 2] == '/'
             && char.IsLetter(text[index - 1]);
     }
+
+    private static bool IsLikelyDotJoiner(string text, int index)
+    {
+        if (index <= 0 || index >= text.Length - 1)
+            return false;
+
+        return IsDotJoinerChar(text[index - 1]) && IsDotJoinerChar(text[index + 1]);
+    }
+
+    private static bool IsDotJoinerChar(char c) => char.IsLetterOrDigit(c) || c == '-';
 }
 
 /// <summary>

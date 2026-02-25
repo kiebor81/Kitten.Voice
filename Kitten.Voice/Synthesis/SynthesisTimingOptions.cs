@@ -10,6 +10,9 @@ internal readonly record struct SynthesisTimingOptions(
     TimeSpan CommaPause,
     TimeSpan SemicolonPause,
     TimeSpan ColonPause,
+    TimeSpan PeriodPause,
+    TimeSpan QuestionPause,
+    TimeSpan ExclamationPause,
     TimeSpan MaxAggregatedTextPause,
     TimeSpan ChunkJoinPause)
 {
@@ -20,6 +23,9 @@ internal readonly record struct SynthesisTimingOptions(
         CommaPause: TimeSpan.FromMilliseconds(90),
         SemicolonPause: TimeSpan.FromMilliseconds(140),
         ColonPause: TimeSpan.FromMilliseconds(140),
+        PeriodPause: TimeSpan.FromMilliseconds(220),
+        QuestionPause: TimeSpan.FromMilliseconds(240),
+        ExclamationPause: TimeSpan.FromMilliseconds(220),
         MaxAggregatedTextPause: TimeSpan.FromMilliseconds(1200),
         ChunkJoinPause: TimeSpan.FromMilliseconds(40));
 }

@@ -97,7 +97,7 @@ public class Speaker(string assetsDir = "assets")
     /// </summary>
     public float[] Synthesize(string text, int? styleRowOverride = null, float styleBlend = 1.0f)
     {
-        return SynthesizeCore(text, Voice, Speed, styleRowOverride, styleBlend);
+        return SynthesizeCore(text, Voice, Speed, styleRowOverride, styleBlend, allowTextPauseParsing: true);
     }
 
     private float[] SynthesizeWithSettings(
@@ -107,7 +107,7 @@ public class Speaker(string assetsDir = "assets")
         int? styleRowOverride,
         float styleBlend)
     {
-        return SynthesizeCore(text, voice, speed, styleRowOverride, styleBlend);
+        return SynthesizeCore(text, voice, speed, styleRowOverride, styleBlend, allowTextPauseParsing: true);
     }
 
     private float[] SynthesizeCore(
@@ -115,9 +115,10 @@ public class Speaker(string assetsDir = "assets")
         string voice,
         float speed,
         int? styleRowOverride,
-        float styleBlend)
+        float styleBlend,
+        bool allowTextPauseParsing)
     {
-        if (PlainTextPauseParser.ContainsPauseCue(text))
+        if (allowTextPauseParsing && PlainTextPauseParser.ContainsPauseCue(text))
         {
             return SynthesizeWithTextPauses(
                 text,
@@ -169,7 +170,13 @@ public class Speaker(string assetsDir = "assets")
             styleBlend,
             SampleRate,
             Timing,
-            (segmentText, row, blend) => SynthesizeCore(segmentText, voice, speed, row, blend));
+            (segmentText, row, blend) => SynthesizeCore(
+                segmentText,
+                voice,
+                speed,
+                row,
+                blend,
+                allowTextPauseParsing: false));
     }
 
     private float[] SynthesizeChunked(
@@ -185,7 +192,13 @@ public class Speaker(string assetsDir = "assets")
             SampleRate,
             Timing,
             GetTokenCount,
-            (segmentText, row, blend) => SynthesizeCore(segmentText, voice, speed, row, blend),
+            (segmentText, row, blend) => SynthesizeCore(
+                segmentText,
+                voice,
+                speed,
+                row,
+                blend,
+                allowTextPauseParsing: true),
             styleRowOverride,
             styleBlend);
     }
