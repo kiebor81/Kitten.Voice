@@ -5,6 +5,7 @@ using Kitten.Voice.Synthesis;
 using Kitten.Voice.TextProcessing;
 using Kitten.Voice.Tokenization;
 using Kitten.Voice.Embeddings;
+using System.Text.RegularExpressions;
 
 namespace Kitten.Voice;
 
@@ -18,6 +19,7 @@ public class Speaker(string assetsDir = "assets")
 {
     private const int SampleRate = 24000;
     private const int MaxInputTokenCount = 500;
+    private static readonly Regex StatementEndingPunctuation = new(@"[.,;:]$", RegexOptions.Compiled);
     private readonly ModelConfig _config = LoadConfigAndApplyOverrides(assetsDir);
     private readonly KokoroTokenizer _tokenizer = KokoroTokenizer.Load(Path.Combine(assetsDir, "tokenizer.json"));
 
@@ -212,9 +214,28 @@ public class Speaker(string assetsDir = "assets")
     private static string EnsureTrailingPunctuation(string text)
     {
         string trimmed = text.TrimEnd();
-        if (trimmed.Length > 0 && !".!?;:,".Contains(trimmed[^1]))
-            trimmed += ".";
-        return trimmed;
+        if (trimmed.Length == 0)
+            return trimmed;
+
+        if (!".!?;:,".Contains(trimmed[^1]))
+            return $"{trimmed} -.";
+
+        // Guard statement endings with a short tokenized spacer to reduce boundary clicks.
+        Match terminal = StatementEndingPunctuation.Match(trimmed);
+        if (!terminal.Success)
+            return trimmed;
+
+        int punctuationIndex = terminal.Index;
+        int scan = punctuationIndex - 1;
+        while (scan >= 0 && char.IsWhiteSpace(trimmed[scan]))
+            scan--;
+
+        if (scan < 0 || trimmed[scan] == '-')
+            return trimmed;
+
+        char punctuation = trimmed[punctuationIndex];
+        string prefix = trimmed[..(scan + 1)];
+        return $"{prefix} -{punctuation}";
     }
 
     private static ModelConfig LoadConfigAndApplyOverrides(string assetsDir)

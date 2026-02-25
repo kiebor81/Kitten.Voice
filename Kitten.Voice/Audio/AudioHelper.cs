@@ -8,9 +8,9 @@ namespace Kitten.Voice.Audio;
 public static class AudioHelper
 {
     private const float NormalizationTarget = 0.95f;
-    private const float SilenceThreshold = 0.02f;
+    private const float SilenceThreshold = 0.008f;
     private const int FadeInMs = 10;
-    private const int FadeOutMs = 150;
+    private const int FadeOutMs = 24;
     private const int TrailingPauseMs = 200;
     private const int AnalysisWindowMs = 20;
 
@@ -22,10 +22,10 @@ public static class AudioHelper
         samples = TrimTail(samples, sampleRate);
         if (samples.Length == 0) return samples;
 
-        AppendSilence(ref samples, sampleRate, TrailingPauseMs);
         Normalize(samples);
         ApplyFadeIn(samples, sampleRate, FadeInMs);
         ApplyFadeOut(samples, sampleRate, FadeOutMs);
+        AppendSilence(ref samples, sampleRate, TrailingPauseMs);
         return samples;
     }
 
@@ -114,8 +114,26 @@ public static class AudioHelper
     private static void ApplyFadeOut(float[] samples, int sampleRate, int milliseconds)
     {
         int count = Math.Min(sampleRate * milliseconds / 1000, samples.Length);
-        for (int i = 0; i < count; i++)
-            samples[samples.Length - 1 - i] *= (float)i / count;
+        if (count <= 1)
+            return;
+
+        int lastActive = FindLastActiveSample(samples);
+        if (lastActive <= 0)
+            return;
+
+        int start = Math.Max(0, lastActive - count + 1);
+        int length = lastActive - start + 1;
+        if (length <= 1)
+            return;
+
+        for (int i = 0; i < length; i++)
+        {
+            float t = (float)i / (length - 1);
+            samples[start + i] *= 1f - t;
+        }
+
+        for (int i = lastActive + 1; i < samples.Length; i++)
+            samples[i] = 0f;
     }
 
     private static void WriteWav(string path, float[] samples, int sampleRate)
@@ -158,7 +176,7 @@ public static class AudioHelper
         for (int start = samples.Length - windowSize; start >= 0; start -= windowSize)
         {
             if (WindowRms(samples, start, windowSize) > threshold)
-                return Math.Min(start + windowSize * 3, samples.Length);
+                return Math.Min(start + windowSize * 6, samples.Length);
         }
         return samples.Length;
     }
@@ -169,5 +187,28 @@ public static class AudioHelper
         for (int j = start; j < start + windowSize; j++)
             sum += samples[j] * samples[j];
         return MathF.Sqrt(sum / windowSize);
+    }
+
+    private static int FindLastActiveSample(float[] samples)
+    {
+        float peakAbs = 0f;
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float abs = Math.Abs(samples[i]);
+            if (abs > peakAbs)
+                peakAbs = abs;
+        }
+
+        if (peakAbs < 1e-6f)
+            return -1;
+
+        float threshold = Math.Max(peakAbs * 0.0015f, 0.0005f);
+        for (int i = samples.Length - 1; i >= 0; i--)
+        {
+            if (Math.Abs(samples[i]) > threshold)
+                return i;
+        }
+
+        return -1;
     }
 }

@@ -127,6 +127,8 @@ internal static class PlainTextPauseParser
             if (c == ',' && !IsIntraNumericPunctuation(text, i))
             {
                 int commas = ConsumeRepeatedChar(text, ref i, ',');
+                if (current.Length > 0 && !char.IsWhiteSpace(current[^1]))
+                    current.Append(',');
                 segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(commaPause, commas)));
                 current.Clear();
                 continue;
@@ -135,6 +137,8 @@ internal static class PlainTextPauseParser
             if (c == ';')
             {
                 int semicolons = ConsumeRepeatedChar(text, ref i, ';');
+                if (current.Length > 0 && !char.IsWhiteSpace(current[^1]))
+                    current.Append(';');
                 segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(semicolonPause, semicolons)));
                 current.Clear();
                 continue;
@@ -143,6 +147,8 @@ internal static class PlainTextPauseParser
             if (c == ':' && !IsIntraNumericPunctuation(text, i) && !IsLikelyUrlSchemeSeparator(text, i))
             {
                 int colons = ConsumeRepeatedChar(text, ref i, ':');
+                if (current.Length > 0 && !char.IsWhiteSpace(current[^1]))
+                    current.Append(':');
                 segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(colonPause, colons)));
                 current.Clear();
                 continue;
