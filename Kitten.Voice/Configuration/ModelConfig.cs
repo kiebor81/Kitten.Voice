@@ -16,6 +16,10 @@ internal sealed class ModelConfig
     /// </summary>
     internal required string VoicesPath { get; init; }
     /// <summary>
+    /// Path to the CMU pronunciation dictionary file relative to the assets directory.
+    /// </summary>
+    internal required string CmuDictPath { get; init; }
+    /// <summary>
     /// Optional mapping of friendly voice names to internal embedding names. This allows users to refer to voices by more intuitive names in prompts. If a voice name is not found in this mapping, it will be used as-is when looking up the embedding file.
     /// </summary>
     internal Dictionary<string, string> VoiceAliases { get; init; } = [];
@@ -39,6 +43,7 @@ internal sealed class ModelConfig
         if (!File.Exists(modelPath))
             throw new FileNotFoundException("Model file not found", modelPath);
 
+        string cmuDictPath = ResolveAssetPath(root, assetsDir, "cmu_dict_file", "cmudict.dict");
         var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (root.TryGetProperty("voice_aliases", out var aliasesElement))
         {
@@ -62,6 +67,7 @@ internal sealed class ModelConfig
         {
             ModelPath = modelPath,
             VoicesPath = Path.Combine(assetsDir, root.GetProperty("voices").GetString()!),
+            CmuDictPath = cmuDictPath,
             VoiceAliases = aliases,
             PronunciationOverrides = overrides,
         };
@@ -73,4 +79,21 @@ internal sealed class ModelConfig
     /// </summary>
     internal string ResolveVoice(string voiceName) =>
         VoiceAliases.TryGetValue(voiceName, out string? resolved) ? resolved : voiceName;
+
+    private static string ResolveAssetPath(
+        JsonElement root,
+        string assetsDir,
+        string propertyName,
+        string fallbackFile)
+    {
+        if (root.TryGetProperty(propertyName, out JsonElement pathElement)
+            && pathElement.ValueKind == JsonValueKind.String)
+        {
+            string? relativePath = pathElement.GetString();
+            if (!string.IsNullOrWhiteSpace(relativePath))
+                return Path.Combine(assetsDir, relativePath);
+        }
+
+        return Path.Combine(assetsDir, fallbackFile);
+    }
 }

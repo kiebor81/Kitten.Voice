@@ -207,6 +207,7 @@ public class Speaker(string assetsDir = "assets")
     private static ModelConfig LoadConfigAndApplyOverrides(string assetsDir)
     {
         ModelConfig config = ModelConfig.Load(assetsDir);
+        EnglishToIpa.ConfigureLexicons(config.CmuDictPath);
         EnglishToIpa.SetOverrides(config.PronunciationOverrides);
         return config;
     }

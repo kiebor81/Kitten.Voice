@@ -5,6 +5,7 @@
   "model": "kitten-tts-mini-0.8",
   "voices" : "voices.npz",
   "model_file": "kitten_tts_mini_v0_8.onnx",
+  "cmu_dict_file": "cmudict.dict",
   "speed_priors": {},
   "voice_aliases": {
     "Bella": "expr-voice-2-f",

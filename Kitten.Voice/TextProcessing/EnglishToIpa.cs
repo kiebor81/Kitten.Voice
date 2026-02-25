@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 
 namespace Kitten.Voice.TextProcessing;
 
@@ -9,9 +9,13 @@ namespace Kitten.Voice.TextProcessing;
 /// </summary>
 public static class EnglishToIpa
 {
-    private static readonly char[] HyphenSeparators = ['-', '‐', '‑', '‒', '–'];
+    private static readonly char[] HyphenSeparators = ['-', '\u2010', '\u2011', '\u2012', '\u2013'];
 
-    private static readonly Dictionary<string, string> PronDict = LoadCmuDict();
+    private const string DefaultCmuDictFileName = "cmudict.dict";
+
+    private static readonly object LexiconSync = new();
+    private static CmuPronunciationLexicon CmuLexicon =
+        CmuPronunciationLexicon.Load(GetDefaultLexiconPath(DefaultCmuDictFileName));
 
     private static readonly Dictionary<string, string> BuiltInOverrides = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -48,34 +52,28 @@ public static class EnglishToIpa
         Overrides = merged;
     }
 
-    private static Dictionary<string, string> LoadCmuDict()
+    /// <summary>
+    /// Configures the CMU pronunciation lexicon file path.
+    /// </summary>
+    public static void ConfigureLexicons(string? cmuDictPath)
     {
-        string path = Path.Combine("assets", "cmudict.dict");
-        var dict = new Dictionary<string, string>(140000, StringComparer.OrdinalIgnoreCase);
+        string resolvedCmuPath = ResolveLexiconPath(cmuDictPath, DefaultCmuDictFileName);
 
-        if (!File.Exists(path))
-            return dict;
-
-        foreach (string line in File.ReadLines(path))
+        lock (LexiconSync)
         {
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
-                continue;
-
-            int firstSpace = line.IndexOf(' ');
-            if (firstSpace < 1)
-                continue;
-
-            string word = line[..firstSpace];
-            string phones = line[(firstSpace + 1)..].Trim();
-
-            if (word.Contains('('))
-                continue;
-
-            dict.TryAdd(word, phones);
+            CmuLexicon = CmuPronunciationLexicon.Load(resolvedCmuPath);
         }
-
-        return dict;
     }
+
+    private static string ResolveLexiconPath(string? configuredPath, string fallbackFileName)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredPath))
+            return configuredPath;
+
+        return GetDefaultLexiconPath(fallbackFileName);
+    }
+
+    private static string GetDefaultLexiconPath(string fileName) => Path.Combine("assets", fileName);
 
     /// <summary>
     /// Converts English text to IPA phonemes suitable for Kokoro/KittenTTS.
@@ -219,7 +217,7 @@ public static class EnglishToIpa
         if (Overrides.TryGetValue(clean, out string? over))
             return ArpabetIpaConverter.Convert(over);
 
-        if (PronDict.TryGetValue(clean, out string? arpabet))
+        if (CmuLexicon.TryGetArpabet(clean, out string arpabet))
             return ArpabetIpaConverter.Convert(arpabet);
 
         return EnglishFallbackG2P.Convert(clean);
