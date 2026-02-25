@@ -13,6 +13,11 @@ internal readonly record struct SynthesisTimingOptions(
     TimeSpan PeriodPause,
     TimeSpan QuestionPause,
     TimeSpan ExclamationPause,
+    bool EnablePunctuationInflection,
+    TimeSpan PunctuationInflectionTail,
+    float QuestionTailPitchSemitones,
+    float ExclamationTailPitchSemitones,
+    float ExclamationTailVolumeBoost,
     TimeSpan MaxAggregatedTextPause,
     TimeSpan ChunkJoinPause)
 {
@@ -26,6 +31,11 @@ internal readonly record struct SynthesisTimingOptions(
         PeriodPause: TimeSpan.FromMilliseconds(220),
         QuestionPause: TimeSpan.FromMilliseconds(240),
         ExclamationPause: TimeSpan.FromMilliseconds(220),
+        EnablePunctuationInflection: true,
+        PunctuationInflectionTail: TimeSpan.FromMilliseconds(220),
+        QuestionTailPitchSemitones: 0.65f,
+        ExclamationTailPitchSemitones: 0.42f,
+        ExclamationTailVolumeBoost: 0.16f,
         MaxAggregatedTextPause: TimeSpan.FromMilliseconds(1200),
         ChunkJoinPause: TimeSpan.FromMilliseconds(40));
 }

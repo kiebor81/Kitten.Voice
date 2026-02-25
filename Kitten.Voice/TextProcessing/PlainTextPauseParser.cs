@@ -17,6 +17,20 @@ internal static class PlainTextPauseParser
             || text.Contains("...", StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Splits the input text into segments based on pause cues, associating each segment with an appropriate pause duration and inflection intent.
+    /// </summary>
+    /// <param name="text"></param>
+    /// <param name="newlinePause"></param>
+    /// <param name="ellipsisPause"></param>
+    /// <param name="emDashPause"></param>
+    /// <param name="commaPause"></param>
+    /// <param name="semicolonPause"></param>
+    /// <param name="colonPause"></param>
+    /// <param name="periodPause"></param>
+    /// <param name="questionPause"></param>
+    /// <param name="exclamationPause"></param>
+    /// <returns></returns>
     internal static List<PlainTextPauseSegment> Split(
         string text,
         TimeSpan newlinePause,
@@ -70,7 +84,10 @@ internal static class PlainTextPauseParser
 
                 int periods = ConsumeRepeatedChar(text, ref i, '.');
                 current.Append('.');
-                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(periodPause, periods)));
+                segments.Add(new PlainTextPauseSegment(
+                    current.ToString(),
+                    ScalePauseByCount(periodPause, periods),
+                    PlainTextInflectionIntent.Statement));
                 current.Clear();
                 continue;
             }
@@ -87,7 +104,10 @@ internal static class PlainTextPauseParser
             {
                 int questions = ConsumeRepeatedChar(text, ref i, '?');
                 current.Append('?');
-                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(questionPause, questions)));
+                segments.Add(new PlainTextPauseSegment(
+                    current.ToString(),
+                    ScalePauseByCount(questionPause, questions),
+                    PlainTextInflectionIntent.Question));
                 current.Clear();
                 continue;
             }
@@ -96,7 +116,10 @@ internal static class PlainTextPauseParser
             {
                 int exclamations = ConsumeRepeatedChar(text, ref i, '!');
                 current.Append('!');
-                segments.Add(new PlainTextPauseSegment(current.ToString(), ScalePauseByCount(exclamationPause, exclamations)));
+                segments.Add(new PlainTextPauseSegment(
+                    current.ToString(),
+                    ScalePauseByCount(exclamationPause, exclamations),
+                    PlainTextInflectionIntent.Exclamation));
                 current.Clear();
                 continue;
             }
@@ -205,8 +228,23 @@ internal static class PlainTextPauseParser
 }
 
 /// <summary>
-/// Represents a segment of text along with the pause duration that should follow it when spoken.
+/// Heuristic intent inferred from terminal punctuation, which may inform prosody adjustments during speech synthesis.
+/// </summary>
+internal enum PlainTextInflectionIntent
+{
+    None = 0,
+    Statement = 1,
+    Question = 2,
+    Exclamation = 3,
+}
+
+/// <summary>
+/// Represents a text segment, trailing pause, and optional punctuation-driven inflection intent.
 /// </summary>
 /// <param name="Text">The text of the segment.</param>
 /// <param name="PauseAfter">The duration of the pause that should follow the segment.</param>
-internal readonly record struct PlainTextPauseSegment(string Text, TimeSpan PauseAfter);
+/// <param name="InflectionIntent">Heuristic intent inferred from terminal punctuation.</param>
+internal readonly record struct PlainTextPauseSegment(
+    string Text,
+    TimeSpan PauseAfter,
+    PlainTextInflectionIntent InflectionIntent = PlainTextInflectionIntent.None);

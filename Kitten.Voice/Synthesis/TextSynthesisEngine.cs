@@ -62,7 +62,10 @@ internal static class TextSynthesisEngine
 
                 float[] spoken = synthesizeSegment(segment, styleRowOverride, styleBlend);
                 if (spoken.Length > 0)
+                {
+                    ApplyPunctuationInflection(spoken, segmentInfo.InflectionIntent, sampleRate, timing);
                     audioSegments.Add(spoken);
+                }
 
                 pendingPause = TimeSpan.Zero;
             }
@@ -123,4 +126,115 @@ internal static class TextSynthesisEngine
             ? WaveformProcessor.Concatenate([.. audioChunks])
             : [];
     }
+
+    private static void ApplyPunctuationInflection(
+        float[] samples,
+        PlainTextInflectionIntent intent,
+        int sampleRate,
+        SynthesisTimingOptions timing)
+    {
+        if (!timing.EnablePunctuationInflection || intent is PlainTextInflectionIntent.None or PlainTextInflectionIntent.Statement)
+            return;
+
+        float semitones = intent switch
+        {
+            PlainTextInflectionIntent.Question => timing.QuestionTailPitchSemitones,
+            PlainTextInflectionIntent.Exclamation => timing.ExclamationTailPitchSemitones,
+            _ => 0f,
+        };
+
+        float volumeBoost = intent == PlainTextInflectionIntent.Exclamation
+            ? timing.ExclamationTailVolumeBoost
+            : 0f;
+
+        if (Math.Abs(semitones) < 0.01f && volumeBoost <= 0.001f)
+            return;
+
+        int lastActive = FindLastActiveSample(samples);
+        if (lastActive <= 1)
+            return;
+
+        int targetTail = (int)(sampleRate * timing.PunctuationInflectionTail.TotalSeconds);
+        if (targetTail < 32)
+            return;
+
+        int endExclusive = lastActive + 1;
+        int tailLength = Math.Min(targetTail, endExclusive);
+        int start = endExclusive - tailLength;
+        if (tailLength < 32 || start < 0)
+            return;
+
+        var tail = new float[tailLength];
+        Array.Copy(samples, start, tail, 0, tailLength);
+
+        if (Math.Abs(semitones) >= 0.01f)
+        {
+            float[] shifted = WaveformProcessor.ApplyPitchShift(tail, sampleRate, semitones);
+            float[] resampledShifted = ResampleToLength(shifted, tailLength);
+
+            for (int i = 0; i < tailLength; i++)
+            {
+                float blend = (float)i / (tailLength - 1);
+                tail[i] = Lerp(tail[i], resampledShifted[i], blend);
+            }
+        }
+
+        if (volumeBoost > 0.001f)
+        {
+            for (int i = 0; i < tailLength; i++)
+            {
+                float blend = (float)i / (tailLength - 1);
+                float gain = 1f + (volumeBoost * blend);
+                tail[i] = Math.Clamp(tail[i] * gain, -1f, 1f);
+            }
+        }
+
+        Array.Copy(tail, 0, samples, start, tailLength);
+        WaveformProcessor.ApplyPeakLimiter(samples);
+    }
+
+    private static int FindLastActiveSample(float[] samples, float threshold = 0.0005f)
+    {
+        for (int i = samples.Length - 1; i >= 0; i--)
+        {
+            if (Math.Abs(samples[i]) > threshold)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private static float[] ResampleToLength(float[] samples, int targetLength)
+    {
+        if (targetLength <= 0)
+            return [];
+
+        if (samples.Length == targetLength)
+            return samples;
+
+        if (samples.Length == 0)
+            return new float[targetLength];
+
+        if (targetLength == 1)
+            return [samples[0]];
+
+        var result = new float[targetLength];
+        float scale = (samples.Length - 1f) / (targetLength - 1f);
+
+        for (int i = 0; i < targetLength; i++)
+        {
+            float source = i * scale;
+            int index = (int)source;
+            float frac = source - index;
+
+            if (index + 1 < samples.Length)
+                result[i] = Lerp(samples[index], samples[index + 1], frac);
+            else
+                result[i] = samples[^1];
+        }
+
+        return result;
+    }
+
+    private static float Lerp(float a, float b, float t) => a + ((b - a) * t);
 }
