@@ -10,8 +10,6 @@
 
 ## Features
 
-- ONNX runtime inference (`Microsoft.ML.OnnxRuntime`)
-- Reused ONNX inference sessions per model path (lower per-call overhead)
 - Cached voice embeddings loaded from `voices.npz`
 - Voice aliases from `assets/config.json`
 - Pronunciation overrides from `assets/config.json` (`pronunciation_overrides`)
