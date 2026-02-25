@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Collections.Concurrent;
 
 namespace Kitten.Voice.Embeddings;
 
@@ -7,6 +8,8 @@ namespace Kitten.Voice.Embeddings;
 /// </summary>
 public static class VoiceStore
 {
+    private static readonly ConcurrentDictionary<string, float[,]> EmbeddingCache = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// Loads a style row from a voice embedding as a flat vector.
     /// </summary>
@@ -62,6 +65,15 @@ public static class VoiceStore
     /// Loads the full [rows, cols] voice embedding from a .npz archive.
     /// </summary>
     public static float[,] LoadEmbedding(string npzPath, string voiceName)
+    {
+        string key = BuildEmbeddingCacheKey(npzPath, voiceName);
+        return EmbeddingCache.GetOrAdd(key, _ => LoadEmbeddingFromArchive(npzPath, voiceName));
+    }
+
+    private static string BuildEmbeddingCacheKey(string npzPath, string voiceName) =>
+        $"{Path.GetFullPath(npzPath)}|{voiceName.ToUpperInvariant()}";
+
+    private static float[,] LoadEmbeddingFromArchive(string npzPath, string voiceName)
     {
         using var archive = ZipFile.OpenRead(npzPath);
         var entry = archive.GetEntry(voiceName + ".npy")

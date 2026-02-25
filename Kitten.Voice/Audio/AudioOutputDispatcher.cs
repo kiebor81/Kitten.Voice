@@ -11,12 +11,12 @@ internal static class AudioOutputDispatcher
                 break;
 
             case AudioOutput.File:
-                AudioHelper.SaveNormalizedWav(outputPath, audio, sampleRate);
+                AudioHelper.SaveWav(outputPath, audio, sampleRate);
                 AudioHelper.Play(outputPath);
                 break;
 
             case AudioOutput.FileOnly:
-                AudioHelper.SaveNormalizedWav(outputPath, audio, sampleRate);
+                AudioHelper.SaveWav(outputPath, audio, sampleRate);
                 break;
         }
     }

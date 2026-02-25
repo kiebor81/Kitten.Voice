@@ -40,6 +40,15 @@ public static class AudioHelper
     }
 
     /// <summary>
+    /// Saves already-processed samples as 16-bit WAV without applying additional processing.
+    /// </summary>
+    public static void SaveWav(string path, float[] samples, int sampleRate)
+    {
+        if (samples.Length == 0) return;
+        WriteWav(path, samples, sampleRate);
+    }
+
+    /// <summary>
     /// Plays processed audio samples directly from memory; no file I/O.
     /// </summary>
     public static void PlayFromMemory(float[] samples, int sampleRate)

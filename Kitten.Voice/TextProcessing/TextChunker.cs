@@ -21,11 +21,22 @@ internal static class TextChunker
         string[] units = trimmed.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         var chunks = new List<string>();
         var current = new System.Text.StringBuilder();
+        var tokenCountCache = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        int GetTokenCountCached(string value)
+        {
+            if (tokenCountCache.TryGetValue(value, out int cached))
+                return cached;
+
+            int count = getTokenCount(value);
+            tokenCountCache[value] = count;
+            return count;
+        }
 
         foreach (string unit in units)
         {
             string candidate = current.Length == 0 ? unit : $"{current} {unit}";
-            if (getTokenCount(candidate) <= maxTokenCount)
+            if (GetTokenCountCached(candidate) <= maxTokenCount)
             {
                 if (current.Length > 0)
                     current.Append(' ');
@@ -39,13 +50,13 @@ internal static class TextChunker
                 current.Clear();
             }
 
-            if (getTokenCount(unit) <= maxTokenCount)
+            if (GetTokenCountCached(unit) <= maxTokenCount)
             {
                 current.Append(unit);
                 continue;
             }
 
-            chunks.AddRange(SplitTokenByCharacterLimit(unit, maxTokenCount, getTokenCount));
+            chunks.AddRange(SplitTokenByCharacterLimit(unit, maxTokenCount, GetTokenCountCached));
         }
 
         if (current.Length > 0)

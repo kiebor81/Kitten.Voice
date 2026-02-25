@@ -1,5 +1,6 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
+using System.Collections.Concurrent;
 
 namespace Kitten.Voice.Synthesis;
 
@@ -8,6 +9,8 @@ namespace Kitten.Voice.Synthesis;
 /// </summary>
 internal static class OnnxInferenceEngine
 {
+    private static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> SessionCache = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>
     /// Runs the ONNX model with the given inputs and returns the generated waveform as a float array.
     /// </summary>
@@ -18,10 +21,20 @@ internal static class OnnxInferenceEngine
     /// <returns>The generated waveform as a float array.</returns>
     internal static float[] Run(string modelPath, long[] tokenIds, float[] styleVector, float speed)
     {
-        using var session = new InferenceSession(modelPath);
+        InferenceSession session = GetSession(modelPath);
         var inputs = BuildInputs(tokenIds, styleVector, speed);
         using var results = session.Run(inputs);
         return [.. results.First(r => r.Name == "waveform").AsEnumerable<float>()];
+    }
+
+    private static InferenceSession GetSession(string modelPath)
+    {
+        string key = Path.GetFullPath(modelPath);
+        Lazy<InferenceSession> lazy = SessionCache.GetOrAdd(
+            key,
+            static path => new Lazy<InferenceSession>(() => new InferenceSession(path), LazyThreadSafetyMode.ExecutionAndPublication));
+
+        return lazy.Value;
     }
 
     private static List<NamedOnnxValue> BuildInputs(long[] tokenIds, float[] styleVector, float speed)
